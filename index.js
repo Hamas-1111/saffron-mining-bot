@@ -1,8 +1,11 @@
-const { Telegraf } = require("telegraf");
+const { Telegraf, Markup } = require("telegraf");
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 require("dotenv").config();
 
 const PORT = process.env.PORT || 3000;
+const MINI_APP_URL = "https://saffron-mining-bot.onrender.com";
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -11,105 +14,180 @@ const users = {};
 const MINING_TIME = 24 * 60 * 60 * 1000;
 const MINING_REWARD = 10;
 
-http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end("SAFFRON Mining Bot is running!");
-}).listen(PORT, "0.0.0.0");
-
-bot.start((ctx) => {
-  ctx.reply(
-    "🌟 Welcome to SAFFRON Mining!\n\n" +
-    "Use /home to open your dashboard."
-  );
-});
-
-bot.command("home", (ctx) => {
-  ctx.reply(
-    "🌟 SAFFRON MINING\n\n" +
-    "⛏ Mining: Demo Mode\n" +
-    "💰 Balance: " + (users[ctx.from.id]?.balance || 0) + " SAF\n\n" +
-    "/startmining - Start Mining\n" +
-    "/mine - Mining Status\n" +
-    "/claim - Claim Reward\n" +
-    "/balance - Check Balance\n"
-  );
-});
-
-bot.command("startmining", (ctx) => {
-  const id = ctx.from.id;
-
+function getUser(id) {
   if (!users[id]) {
-    users[id] = { balance: 0, mining: false };
+    users[id] = {
+      balance: 0,
+      miningStartedAt: null
+    };
   }
+  return users[id];
+}
 
-  if (users[id].mining) {
-    return ctx.reply("⛏ Your mining session is already active!");
-  }
+function appButton() {
+  return Markup.inlineKeyboard([
+    [
+      Markup.button.webApp(
+        "🚀 Open SAFFRON App",
+        MINI_APP_URL
+      )
+    ]
+  ]);
+}
 
-  users[id].mining = true;
-  users[id].startTime = Date.now();
+// Website server
+http.createServer((req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "public",
+    "index.html"
+  );
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(500);
+      return res.end("SAFFRON Mini App loading error");
+    }
+
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8"
+    });
+
+    res.end(data);
+  });
+}).listen(PORT, "0.0.0.0", () => {
+  console.log("SAFFRON Mini App server running on port " + PORT);
+});
+
+// Start command
+bot.start((ctx) => {
+  getUser(ctx.from.id);
 
   ctx.reply(
-    "⛏ SAFFRON MINING STARTED!\n\n" +
-    "⏳ Mining Time: 24 Hours\n" +
-    "🎁 Reward: 10 SAF\n\n" +
-    "Use /mine to check your progress."
+    "👑 Welcome to SAFFRON MINING!\n\n" +
+    "Mine • Earn • Grow\n\n" +
+    "Tap below to open your SAFFRON dashboard.",
+    appButton()
   );
 });
 
-bot.command("mine", (ctx) => {
-  const user = users[ctx.from.id];
+// Home command
+bot.command("home", (ctx) => {
+  const user = getUser(ctx.from.id);
 
-  if (!user || !user.mining) {
-    return ctx.reply("⛏ Mining is not active. Use /startmining.");
+  ctx.reply(
+    "👑 SAFFRON MINING\n\n" +
+    "💰 Balance: " + user.balance + " SAF\n\n" +
+    "⛏ /startmining - Start Mining\n" +
+    "📊 /mine - Mining Status\n" +
+    "🎁 /claim - Claim Reward\n" +
+    "💎 /balance - Check Balance\n\n" +
+    "Open your dashboard below.",
+    appButton()
+  );
+});
+
+// Start mining
+bot.command("startmining", (ctx) => {
+  const user = getUser(ctx.from.id);
+
+  if (user.miningStartedAt) {
+    return ctx.reply(
+      "⛏ Mining is already running.\nUse /mine to check status."
+    );
   }
 
-  const elapsed = Date.now() - user.startTime;
+  user.miningStartedAt = Date.now();
+
+  ctx.reply(
+    "✅ SAFFRON demo mining started!\n\n" +
+    "⏰ Duration: 24 Hours\n" +
+    "🎁 Demo Reward: 10 SAF\n\n" +
+    "Use /mine to check progress."
+  );
+});
+
+// Mining status
+bot.command("mine", (ctx) => {
+  const user = getUser(ctx.from.id);
+
+  if (!user.miningStartedAt) {
+    return ctx.reply(
+      "⛏ Mining is not running.\nUse /startmining to begin."
+    );
+  }
+
+  const elapsed = Date.now() - user.miningStartedAt;
   const remaining = MINING_TIME - elapsed;
 
   if (remaining <= 0) {
-    return ctx.reply("🎉 Mining completed! Use /claim to collect your reward.");
+    return ctx.reply(
+      "🎉 Your 24-hour demo mining session is complete!\n" +
+      "Use /claim to collect your demo reward."
+    );
   }
 
   const hours = Math.floor(remaining / 3600000);
   const minutes = Math.floor((remaining % 3600000) / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
 
   ctx.reply(
-    "⛏ SAFFRON MINING STATUS\n\n" +
-    "⏳ Remaining: " + hours + " hours " + minutes + " minutes\n" +
+    "⛏ SAFFRON Mining Status\n\n" +
+    "⏳ Time Remaining: " +
+    hours + "h " + minutes + "m " + seconds + "s\n\n" +
     "🎁 Reward: 10 SAF"
   );
 });
 
+// Claim reward
 bot.command("claim", (ctx) => {
-  const user = users[ctx.from.id];
+  const user = getUser(ctx.from.id);
 
-  if (!user || !user.mining) {
-    return ctx.reply("❌ No active mining session.");
+  if (!user.miningStartedAt) {
+    return ctx.reply(
+      "You have no completed mining session."
+    );
   }
 
-  if (Date.now() - user.startTime < MINING_TIME) {
-    return ctx.reply("⏳ Mining is not completed yet!");
+  const elapsed = Date.now() - user.miningStartedAt;
+
+  if (elapsed < MINING_TIME) {
+    const remaining = MINING_TIME - elapsed;
+    const hours = Math.floor(remaining / 3600000);
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+
+    return ctx.reply(
+      "⏳ Mining is not complete yet.\n" +
+      "Remaining: " + hours + "h " + minutes + "m"
+    );
   }
 
   user.balance += MINING_REWARD;
-  user.mining = false;
+  user.miningStartedAt = null;
 
   ctx.reply(
-    "🎉 REWARD CLAIMED!\n\n" +
+    "🎉 DEMO REWARD CLAIMED!\n\n" +
     "💰 Earned: 10 SAF\n" +
     "💎 Total Balance: " + user.balance + " SAF\n\n" +
     "Use /startmining to start again."
   );
 });
 
+// Balance
 bot.command("balance", (ctx) => {
-  const balance = users[ctx.from.id]?.balance || 0;
-  ctx.reply("💰 Your SAFFRON Balance: " + balance + " SAF");
+  const user = getUser(ctx.from.id);
+
+  ctx.reply(
+    "💰 Your SAFFRON Demo Balance: " +
+    user.balance + " SAF"
+  );
 });
 
+// Help
 bot.command("help", (ctx) => {
   ctx.reply(
+    "👑 SAFFRON MINING HELP\n\n" +
+    "/start - Start Bot\n" +
     "/home - Main Menu\n" +
     "/startmining - Start Mining\n" +
     "/mine - Mining Status\n" +
@@ -118,11 +196,15 @@ bot.command("help", (ctx) => {
   );
 });
 
-bot.catch((err) => console.error("Bot Error:", err));
+// Error handling
+bot.catch((err) => {
+  console.error("Bot Error:", err);
+});
 
+// Launch bot
 bot.launch()
   .then(() => console.log("SAFFRON Mining Bot Started"))
-  .catch(console.error);
+  .catch((err) => console.error("Launch Error:", err));
 
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
