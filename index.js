@@ -1,8 +1,20 @@
 const { Telegraf } = require("telegraf");
+const http = require("http");
 require("dotenv").config();
 
+const PORT = process.env.PORT || 3000;
+
+const server = http.createServer((req, res) => {
+res.writeHead(200, { "Content-Type": "text/plain" });
+res.end("SAFFRON Mining Bot is running!");
+});
+
+server.listen(PORT, "0.0.0.0", () => {
+console.log("Web server running on port ${PORT}");
+});
+
 if (!process.env.BOT_TOKEN) {
-console.error("BOT_TOKEN is missing. Add it as a private environment variable.");
+console.error("BOT_TOKEN is missing.");
 process.exit(1);
 }
 
@@ -22,7 +34,6 @@ ctx.reply(
 "⛏ Mining: Demo mode\n" +
 "💰 Balance: 0 SAF\n" +
 "🏆 Levels: 500\n\n" +
-"Available commands:\n" +
 "/mine - Mining information\n" +
 "/balance - Check balance\n" +
 "/levels - View level system\n" +
@@ -54,8 +65,14 @@ bot.launch()
 .then(() => console.log("SAFFRON bot started"))
 .catch((err) => {
 console.error("Bot failed to start:", err);
-process.exit(1);
 });
 
-process.once("SIGINT", () => bot.stop("SIGINT"));
-process.once("SIGTERM", () => bot.stop("SIGTERM"));
+process.once("SIGINT", () => {
+bot.stop("SIGINT");
+server.close();
+});
+
+process.once("SIGTERM", () => {
+bot.stop("SIGTERM");
+server.close();
+});
