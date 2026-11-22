@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAFFRON MINING</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#080808;
+ color:#fff;
+ font-family:Arial,sans-serif;
+ padding:18px 14px 100px;
+}
+.header{text-align:center;padding:18px 0 25px}
+.logo{font-size:35px;font-weight:900;color:#e8b84e}
+.tag{color:#c9a65b;margin-top:8px}
+.panel{
+ background:linear-gradient(145deg,#191510,#080808);
+ border:1px solid #a77a2c;
+ border-radius:22px;
+ padding:18px;
+ margin-bottom:16px;
+}
+.balance{display:flex;justify-content:space-between;align-items:center}
+.label{color:#ccc;font-size:14px}
+.amount{font-size:29px;font-weight:bold;margin-top:8px}
+.gold{color:#efc45e}
+.level{text-align:right}
+.level strong{font-size:28px;color:#efc45e}
+.mine-area{text-align:center;padding:25px 0}
+.mine{
+ width:230px;height:230px;border-radius:50%;
+ border:5px solid #bd8e36;
+ background:radial-gradient(#4a3517,#100d08 70%);
+ color:#f3c65e;
+ font-size:27px;font-weight:bold;
+ box-shadow:0 0 15px #75521e;
+}
+.mine:active{transform:scale(.97)}
+.progress{height:13px;background:#29231a;border-radius:20px;margin-top:16px;overflow:hidden}
+.bar{height:100%;width:0;background:#d6a83f}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{text-align:center;min-height:105px}
+.card h3{color:#e9bd5b;margin:5px}
+.nav{
+ position:fixed;bottom:0;left:0;width:100%;
+ background:#101010;border-top:1px solid #80602b;
+ display:flex;justify-content:space-around;padding:13px 3px;
+}
+.nav span{font-size:12px;color:#e5bd63;text-align:center}
+.small{font-size:12px;color:#aaa;text-align:center;margin-top:20px}
+</style>
+</head>
+
+<body>
+
+<header class="header">
+ <div class="logo">♛ SAFFRON MINING</div>
+ <div class="tag">Mine • Earn • Grow</div>
+</header>
+
+<section class="panel balance">
+ <div>
+  <div class="label">Your Balance</div>
+  <div class="amount"><span id="balance">0.00</span> <span class="gold">SAF</span></div>
+ </div>
+ <div class="level">
+  <div class="label">Level</div>
+  <strong>1</strong>
+ </div>
+</section>
+
+<div class="mine-area">
+ <button class="mine" id="mineBtn" onclick="startMining()">
+  ⚒️<br>START<br>MINING
+ </button>
+</div>
+
+<section class="panel">
+ <div class="balance">
+  <div>
+   <strong>Mining Progress</strong>
+   <p class="label" id="timer">Ready to start</p>
+  </div>
+  <div class="gold">Reward<br>10 SAF</div>
+ </div>
+ <div class="progress"><div class="bar" id="bar"></div></div>
+</section>
+
+<div class="cards">
+ <section class="panel card">
+  <h3>🏆 Levels</h3>
+  <p>Reach higher levels</p>
+ </section>
+ <section class="panel card">
+  <h3>🎁 Daily Reward</h3>
+  <p>Coming Soon</p>
+ </section>
+ <section class="panel card">
+  <h3>👥 Friends</h3>
+  <p>Invite friends</p>
+ </section>
+ <section class="panel card">
+  <h3>👛 Wallet</h3>
+  <p>Coming Soon</p>
+ </section>
+</div>
+
+<p class="small">
+Demo version only. SAF is not a real cryptocurrency.
+No real mining or withdrawals are available.
+</p>
+
+<nav class="nav">
+ <span>⌂<br>Home</span>
+ <span>⚒<br>Mining</span>
+ <span>★<br>Levels</span>
+ <span>🛒<br>Market</span>
+ <span>👥<br>Friends</span>
+ <span>👛<br>Wallet</span>
+</nav>
+
+<script>
+const tg = window.Telegram.WebApp;
+if(tg){tg.ready();tg.expand();}
+
+let running=false;
+function startMining(){
+ if(running)return;
+ running=true;
+ document.getElementById("mineBtn").innerHTML="⛏️<br>MINING...";
+ document.getElementById("timer").innerText="Demo mining started";
+ let progress=0;
+ const interval=setInterval(()=>{
+  progress+=1;
+  document.getElementById("bar").style.width=progress+"%";
+  if(progress>=100){
+   clearInterval(interval);
+   document.getElementById("timer").innerText="Demo session finished";
+   document.getElementById("mineBtn").innerHTML="✓<br>COMPLETED";
+  }
+ },1000);
+}
+</script>
+
+</body>
+  </html>
